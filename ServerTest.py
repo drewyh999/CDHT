@@ -10,7 +10,7 @@ def getSocket(portnumber):
     serversocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     host = socket.gethostname()
     serversocket.bind((host,portnumber))
-    #serversocket.settimeout(20)
+    #serversocket.setblocking(False)
     serversocket.listen(5)
     return serversocket
 

@@ -17,13 +17,13 @@ UDP_PORT_BASE = 30000;#port base is used to combine the offset(identifier) to be
 TCP_PORT_BASE = 50000;#port base for udp transmission
 HAVE_SUCNODE2 = False;#currently got the sucnode_2
 PRENODE_INFORMED = False #inform the prenode to change the sucnode_1
-STATUS_PING_TIMEOUT = 1.0; #timeout that a ping to test alive
+STATUS_PING_TIMEOUT = 5.0; #timeout that a ping to test alive
 BUFFER = 1024;
-SHOW_TRIVAL_MSG = True;#show the ping message or not
+SHOW_TRIVAL_MSG = False;#show the ping message or not
 SHORTCUT_AVA = False;#the shortcut node is alive or not
 SUCNODE1_AVA = False;#the sucnode_1 is alive or not
-STATUS_PING_INTERVAL = 3;
-NODE_TIMEOUT_INTERVAL = 5;#the maximum time a node have to respond to a ping req
+STATUS_PING_INTERVAL = 3.0;
+NODE_TIMEOUT_INTERVAL = 5.0;#the maximum time a node have to respond to a ping req
 MAX_TCP_CONN = 5; #Max TCP connection that could be handled at the same time
 MAX_ID = 255;#Max number of peer#TODO limit the id number
 FILE_ALLOCATED_TO_SELF = 5
@@ -132,7 +132,7 @@ def Status_monitor():
     global last_suc_reply
     last_suc_reply = time.time()#the time last suc ack arrived
     last_suc_sent = 0 #the time that last ping to sucnode_1 was sent
-    global last_sct_reply#Set to time() so that they won't be judged as timeout in the first round
+    global last_sct_reply#Set to time() when need shortcut so that they won't be judged as timeout in the first round
     last_sct_sent = 0
 
     udp_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
@@ -140,42 +140,61 @@ def Status_monitor():
     udp_socket.bind((socket.gethostname(),UDP_PORT_BASE + self_identifier))
 
     inputs = [udp_socket, ]
-    writeable = [udp_socket,]
+
     while True:
         try:
             data = None
             addr = None
-            r_list, w_list, e_list = select.select(inputs, w_list, [], 1)
-            while data is None or addr is None:
-                for event in r_list:
-                    if event == udp_socket:
-                        try:
-                            data,addr = event.recvfrom(BUFFER)
-                            break
-                        except Exception as e:
-                            print("Exception happens among socket receiving" + e.message)
-            ip = addr[0]
-            port = addr[1]
-            msg_type = data
-            if msg_type == "SEQ":
-                #handle incoming ping request by send back ack
-                printbycom("Incomming ping message from" + bytes(addr),SHOW_TRIVAL_MSG)
-                #Set the prenode to the node that is pingping current node
-                prenode = addr
-                pre_id = prenode[1] - UDP_PORT_BASE
-                udp_socket.sendto("ACK",(ip, port))
-            if msg_type == "ACK"and addr == sucnode_1:
-                last_suc_reply = time.time()
-                printbycom("Successor node " + sucnode_1 + " is online",SHOW_TRIVAL_MSG)
+            r_list, w_list, e_list = select.select(inputs, [], [], 1)
+            for event in r_list:
+                    try:
+                        data,addr = event.recvfrom(BUFFER)
+                        ip = addr[0]
+                        port = addr[1]
+                        msg_type = data
+                        if msg_type == "SEQ":
+                            # handle incoming ping request by send back ack
+                            printbycom("Incomming ping message from" + bytes(addr), SHOW_TRIVAL_MSG)
+                            # Set the prenode to the node that is pingping current node
+                            prenode = addr
+                            pre_id = prenode[1] - UDP_PORT_BASE
+                            udp_socket.sendto("ACK", (ip, port))
+                        if msg_type == "ACK" and addr == sucnode_1:
+                            last_suc_reply = time.time()
+                            printbycom("Successor node " + bytes(sucnode_1) + " is online", SHOW_TRIVAL_MSG)
 
-            if msg_type == "SCTACK" and addr == shortcutnode:
-                shortcutnode = addr
-                last_sct_reply = time.time()
-                printbycom("Short cut node " + shortcutnode + " is online",SHOW_TRIVAL_MSG)
+                        if msg_type == "SCTACK" and addr == shortcutnode:
+                            shortcutnode = addr
+                            last_sct_reply = time.time()
+                            printbycom("Short cut node " + shortcutnode + " is online", SHOW_TRIVAL_MSG)
 
-            if msg_type == "SCTSEQ":
-                udp_socket.sendto("SCTACK", (ip, port))
-                printbycom("We have become a short cut node for" + shortcutnode,SHOW_TRIVAL_MSG)
+                        if msg_type == "SCTSEQ":
+                            udp_socket.sendto("SCTACK", (ip, port))
+                            printbycom("We have become a short cut node for" + shortcutnode, SHOW_TRIVAL_MSG)
+                        break
+                    except Exception as e:
+                        print("Exception happens among socket receiving" + e.message)
+
+            if SUCNODE1_AVA and (time.time() - last_suc_sent > STATUS_PING_INTERVAL):
+                last_suc_sent = time.time()
+                udp_socket.sendto("SEQ", sucnode_1)
+                printbycom("Sending ping to test " + bytes(sucnode_1),SHOW_TRIVAL_MSG)
+
+            if SUCNODE1_AVA and (time.time() - last_suc_reply > NODE_TIMEOUT_INTERVAL):#if the sucnode is timeout ,try to contact sucnode_2
+                print("Successor node 1 is proved to be offline, trying to contact successor node 2")
+                SUCNODE1_AVA = False
+                #TODO need a restriction in port use when using multithreading ?
+                threading.Thread(target = UrgentContact).start()
+
+            if SHORTCUT_AVA and (time.time() - last_sct_sent > STATUS_PING_INTERVAL):
+                last_sct_sent = time.time()
+                udp_socket.sendto("SCTSEQ", shortcutnode)
+                printbycom("Sending ping to test Short cut" + bytes(shortcutnode), SHOW_TRIVAL_MSG)
+
+            if SHORTCUT_AVA and (time.time() - last_sct_reply > NODE_TIMEOUT_INTERVAL):  # if the sucnode is timeout try to contact sucnode_2
+                SHORTCUT_AVA = False
+                Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":"  + bytes(socket.gethostname()) + ":" + bytes(UDP_PORT_BASE + self_identifier),sucnode_1[0],sucnode_1[1])
+                printbycom("Short cut node 1 is proved to be offline We are trying to find a new one",SHOW_TRIVAL_MSG)
 
         except socket.timeout as e:
             print("Socket timout")
@@ -183,24 +202,6 @@ def Status_monitor():
             print("Exception happened during udp ping receiving" + e.message)
             continue
 
-        if SUCNODE1_AVA and (time.time() - last_suc_sent > STATUS_PING_INTERVAL):
-            udp_socket.sendto("SEQ", sucnode_1)
-            printbycom("Sending ping to test " + sucnode_1,SHOW_TRIVAL_MSG)
-
-        if SUCNODE1_AVA and (time.time() - last_suc_reply > NODE_TIMEOUT_INTERVAL):#if the sucnode is timeout ,try to contact sucnode_2
-            print("Successor node 1 is proved to be offline, trying to contact successor node 2")
-            SUCNODE1_AVA = False
-            #TODO need a restriction in port use when using multithreading ?
-            threading.Thread(target = UrgentContact).start()
-
-        if SHORTCUT_AVA and (time.time() - last_sct_sent > STATUS_PING_INTERVAL):
-            udp_socket.sendto("SCTSEQ", shortcutnode)
-            printbycom("Sending ping to test Short cut" + shortcutnode, SHOW_TRIVAL_MSG)
-
-        if SHORTCUT_AVA and (time.time() - last_sct_reply > NODE_TIMEOUT_INTERVAL):  # if the sucnode is timeout try to contact sucnode_2
-            SHORTCUT_AVA = False
-            Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":"  + bytes(socket.gethostname()) + ":" + bytes(UDP_PORT_BASE + self_identifier),sucnode_1[0],sucnode_1[1])
-            printbycom("Short cut node 1 is proved to be offline We are trying to find a new one",SHOW_TRIVAL_MSG)
 
 def Command_monitor():
 
@@ -208,21 +209,14 @@ def Command_monitor():
 
     tcp_sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     tcp_sock.bind((socket.gethostname(),TCP_PORT_BASE + self_identifier))
-    tcp_sock.setblocking(False)
+   # tcp_sock.setblocking(False)
     tcp_sock.listen(MAX_TCP_CONN)
 
     inputs = [tcp_sock, ]
 
     while True:
-        conn = None
-        addr = None
-        while conn is None or addr is None:
-            r_list, w_list, e_list = select.select(inputs, [], [], 1)
-            for event in r_list:
-                if event == tcp_sock:
-                    conn, addr = event.accept()
-                    break
-
+        #TCP monitor does not need to be none blocking
+        conn,addr = tcp_sock.accept()
         data = conn.recv(BUFFER)
         if not data : break
         command = bytes(data).split(":")[0] #command as the first string before ':'
@@ -339,7 +333,7 @@ def Get_nextnode(*addr):
 
 def main_procedure():
     global sucnode_1, sucnode_2,prenode,shortcutnode,self_identifier,pre_id,suc_id,SUCNODE1_AVA
-    global SHORTCUT_NUMBER,HAVE_SUCNODE2,SHOW_TRIVAL_MSG
+    global SHORTCUT_NUMBER,HAVE_SUCNODE2,SHOW_TRIVAL_MSG,last_suc_reply
     if sucnode_1 is not None and prenode is not None:
         print("Attempting to joining the network with successor " + sucnode_1[0] + " and the predecessor " + prenode[0])
     # TODO Change the global last_sct_reply to time.time() when the shortcut is needed
@@ -365,8 +359,10 @@ def main_procedure():
             sucnode_1  = (str.split(":")[0], int(str.split(":")[1]))
             suc_id = sucnode_1[1] - UDP_PORT_BASE
             SUCNODE1_AVA = True
+            last_suc_reply = time.time()
             threading.Thread(target=Get_nextnode, args=(sucnode_1)).start()
             continue
+
         command = raw_input("Please input next command")
         if command == "exit":
             Send_TCP_msg("QUIT", prenode[0], prenode[1])
@@ -402,6 +398,13 @@ def main_procedure():
             elif param == "self_tcp_port":
                 print("TCP port:" + bytes(TCP_PORT_BASE + self_identifier))
                 continue
+            elif param == "prenode":
+                print("prenode is:" + bytes(prenode))
+            elif param == "sucnode":
+                print("sucnode is:" + bytes(sucnode_1))
+            elif param == "backupnode":
+                str = bytes(sucnode_2) if HAVE_SUCNODE2 else "no backup node avaliable"
+                print("backupnode is:" + str)
         else:
             print("Invalid command please reinput\n")
             continue
