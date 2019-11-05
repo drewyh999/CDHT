@@ -19,7 +19,7 @@ HAVE_SUCNODE2 = False;#currently got the sucnode_2
 PRENODE_INFORMED = False #inform the prenode to change the sucnode_1
 STATUS_PING_TIMEOUT = 5.0; #timeout that a ping to test alive
 BUFFER = 1024;
-SHOW_TRIVAL_MSG = False;#show the ping message or not
+SHOW_TRIVAL_MSG = True;#show the ping message or not
 SHORTCUT_AVA = False;#the shortcut node is alive or not
 SUCNODE1_AVA = False;#the sucnode_1 is alive or not
 STATUS_PING_INTERVAL = 3.0;
@@ -247,7 +247,7 @@ def Command_monitor():
           if command == "ASKNEXT":
               #Tell the pre node
               conn.send("NEXT:" + bytes(sucnode_1[0]) + ":" + bytes(sucnode_1[1]))
-              printbycom("PreNode " + bytes(addr[0]) + ":" + bytes(addr[1]) + "is asking for next node",SHOW_TRIVAL_MSG)
+              print("PreNode " + bytes(addr[0]) + ":" + bytes(addr[1]) + "is asking for next node")
               break
           #Handling the File storing request, if we are supposed to store the file, than store it
           #Else we transmit it to next node
