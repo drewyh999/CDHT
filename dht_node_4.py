@@ -307,8 +307,7 @@ def Command_monitor():
             #After the iteration we send out a message to ask for sucnode2 if we do not have one
             if SUCNODE1_AVA and not HAVE_SUCNODE2:
                 Get_nextnode(sucnode_1[0], suc_id + TCP_PORT_BASE)
-                printbycom("Asking for backup node",SHOW_TRIVAL_MSG)
-
+                printbycom("Asking for backup node", SHOW_TRIVAL_MSG)
           #Handling quit command(quiting message is only possible to be sent from the current successor)
 
 
