@@ -74,22 +74,24 @@ def initialization():
 def UrgentContact():
     global sucnode_1,HAVE_SUCNODE2,SUCNODE1_AVA,last_suc_reply,suc_id
     if not HAVE_SUCNODE2:
-        printbycom("Unforunately We Don't have the successor node 2",SHOW_TRIVAL_MSG)
+        print("Unforunately We Don't have the successor node 2")
         return
     urgent_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     urgent_socket.settimeout(STATUS_PING_TIMEOUT)
     urgent_socket.sendto("SEQ", sucnode_2)
-    u_data, u_addr = urgent_socket.recvfrom(BUFFER)
-    if u_data == "ACK" and u_addr == sucnode_2[1]:
-        sucnode_1 = sucnode_2
-        suc_id = sucnode_1[1] - UDP_PORT_BASE
-        HAVE_SUCNODE2 = False
-        last_suc_reply = time.time()
-        SUCNODE1_AVA = True
-        printbycom("Fortunately Successor node 2 is Online! Setting successor node 1 to him!", SHOW_TRIVAL_MSG)
-    else:
+    try:
+        u_data, u_addr = urgent_socket.recvfrom(BUFFER)
+        if u_data == "ACK" and u_addr == sucnode_2:
+            sucnode_1 = sucnode_2
+            suc_id = sucnode_1[1] - UDP_PORT_BASE
+            HAVE_SUCNODE2 = False
+            last_suc_reply = time.time()
+            SUCNODE1_AVA = True
+            print("Fortunately Successor node 2 is Online! Setting successor node 1 to him!")
+    except socket.timeout as t:
         SUCNODE1_AVA = False
         HAVE_SUCNODE2 = False
+        print("Unforunately successor node 2 has timed out " + t.message)
 
 def printbycom(str,show_trival_msg):
     if(show_trival_msg):
@@ -143,8 +145,6 @@ def Status_monitor():
 
     while True:
         try:
-            data = None
-            addr = None
             r_list, w_list, e_list = select.select(inputs, [], [], 1)
             for event in r_list:
                     try:
@@ -164,6 +164,9 @@ def Status_monitor():
                             printbycom("Successor node " + bytes(sucnode_1) + " is online", SHOW_TRIVAL_MSG)
 
                         if msg_type == "SCTACK" and addr == shortcutnode:
+                            #Regularly receive the ping ack from short cut node
+                            #Or receive the ack from newly found shortcut
+                            #So set SHORTCUT_AVA to True every time we recieve a SCTACK
                             SHORTCUT_AVA = True
                             shortcutnode = addr
                             last_sct_reply = time.time()
@@ -185,7 +188,7 @@ def Status_monitor():
                 print("Successor node 1 is proved to be offline, trying to contact successor node 2")
                 SUCNODE1_AVA = False
                 #TODO need a restriction in port use when using multithreading ?
-                thread = threading.Thread(target = UrgentContact)
+                thread = threading.Thread(target=UrgentContact)
                 thread.setDaemon(True)
                 thread.start()
 
@@ -209,12 +212,13 @@ def Status_monitor():
 def Command_monitor():
 
     global last_sct_reply, last_suc_reply, sucnode_1,self_identifier,HAVE_SUCNODE2,SUCNODE1_AVA,sucnode_2,suc_id
-    global JOINING_NETWORK
+    global JOINING_NETWORK,last_ask_sent
     tcp_sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     tcp_sock.bind((socket.gethostname(),TCP_PORT_BASE + self_identifier))
     tcp_sock.setblocking(False)
     tcp_sock.listen(MAX_TCP_CONN)
 
+    last_ask_sent = 0
     inputs = [tcp_sock, ]
     while True:
         #TCP monitor need to be none blocking
@@ -227,8 +231,8 @@ def Command_monitor():
                     inputs.append(new_sock)
                 else:
                     data = event.recv(BUFFER)
-                    command = bytes(data).split(":")[0]
                     if data:
+                        command = bytes(data).split(":")[0]
                         if command == "QUIT":
                             print("Our successor node " + bytes(sucnode_1) + "is leaving the network")
                             # if we do not have a suc_node 2, just let the user to specify a new successor
@@ -241,7 +245,6 @@ def Command_monitor():
                                 sucnode_1 = sucnode_2
                                 suc_id = sucnode_1[1] - UDP_PORT_BASE
                                 print("Now " + bytes(sucnode_1) + "is my successor node")
-                            break
 
                         # Handling the new node joining the network
                         # Set the sucnode via the info and set have sucnode2 to false to find a new backupnode
@@ -258,10 +261,9 @@ def Command_monitor():
                             if SUCNODE1_AVA:
                                 event.send("NEXT:" + bytes(sucnode_1[0]) + ":" + bytes(sucnode_1[1]))
                                 printbycom("PreNode " + bytes(addr[0]) + ":" + bytes(addr[1]) + "is asking for next node",
-                                       SHOW_TRIVAL_MSG)
+                                           SHOW_TRIVAL_MSG)
                             else:
                                 event.send("NEXT:NULL")
-                            break
                         # Handling the File storing request, if we are supposed to store the file, than store it
                         # Else we transmit it to next node
                         if command == "STORE" or command == "REQ":
@@ -279,14 +281,12 @@ def Command_monitor():
                                     Contact_and_Transfer(src_ip, src_port, TRAN)
                                 else:
                                     Contact_and_Transfer(src_ip, src_port, DOWNLOAD)
-                                break
                             # If the myhash value is greater than both self and the successor node ID we forward the command
                             elif Check_File_Ava(filename) == FILE_NOT_ALLOCATED_TO_SELF:
                                 # If the successor node is ava than forward the message
                                 if SUCNODE1_AVA:
                                     printbycom("File is not ava here ,forwarding the request", SHOW_TRIVAL_MSG)
                                     Send_TCP_msg(command, sucnode_1[0], suc_id + TCP_PORT_BASE)
-                                    break
                         # Handle shortcut searching request
                         if command == "SCT":
                             searchcount = int(data.split(":")[1])
@@ -295,19 +295,19 @@ def Command_monitor():
                             # If the search count is down to 1 than we know that self is the shortcut node that the node is looking for
                             if searchcount == 1:
                                 printbycom("Shortcut searching hit! Responding back", SHOW_TRIVAL_MSG)
+                                #Just send the SCTACK to the dest ip and port to notify him we are the short cut node his looking for
                                 Send_UDP_msg("SCTACK", src_ip, src_port)
                             else:
                                 # Else we just decrease the search count by 1 and forward the request
                                 searchcount = searchcount - 1
                                 if SUCNODE1_AVA:
                                     Send_TCP_msg("SCT:" + bytes(searchcount) + ":" + src_ip + ":" + src_port,sucnode_1[0], suc_id + TCP_PORT_BASE)
-                        break
                     else:
                         inputs.remove(event)
             #After the iteration we send out a message to ask for sucnode2 if we do not have one
-            if SUCNODE1_AVA and not HAVE_SUCNODE2:
+            if SUCNODE1_AVA and not HAVE_SUCNODE2 and (time.time() - last_ask_sent > STATUS_PING_INTERVAL):
+                last_ask_sent = time.time()
                 Get_nextnode(sucnode_1[0], suc_id + TCP_PORT_BASE)
-                printbycom("Asking for backup node",SHOW_TRIVAL_MSG)
 
           #Handling quit command(quiting message is only possible to be sent from the current successor)
 
@@ -370,6 +370,7 @@ def main_procedure():
         try:
             Send_TCP_msg("JOIN:" + bytes(socket.gethostbyname(socket.gethostname())) + ":" + bytes(UDP_PORT_BASE + self_identifier),prenode[0],pre_id + TCP_PORT_BASE)
             SUCNODE1_AVA = True
+            HAVE_SUCNODE2 = False
         except Exception as e:
             print("Exception happens when trying to join the network " + e.message)
             sys.exit(1)
@@ -396,7 +397,7 @@ def main_procedure():
 
     while True:
 
-        if not SUCNODE1_AVA:
+        if not SUCNODE1_AVA and not HAVE_SUCNODE2:
             try:
                 print("It seems our sucessor node is now not available please specify a new one")
                 str = raw_input("input the suc_node ip and UDP port number divided by ':'")
@@ -410,7 +411,7 @@ def main_procedure():
                 print("exception happened when parsing the address please retry")
                 continue
 
-        command = raw_input("Please input next command")
+        command = raw_input("Please input next command\n")
         if command == "exit":
             try:
                 Send_TCP_msg("QUIT", prenode[0], pre_id + TCP_PORT_BASE)

@@ -5,12 +5,12 @@
 import socket
 import threading
 import time
-
+import select
 def getSocket(portnumber):
     serversocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     host = socket.gethostname()
     serversocket.bind((host,portnumber))
-    #serversocket.setblocking(False)
+    serversocket.setblocking(False)
     serversocket.listen(5)
     return serversocket
 
@@ -36,15 +36,24 @@ if __name__ == '__main__':
     serversocket = getSocket(portnumber)
     print("Server Started listening on " + bytes(portnumber) + " at " + socket.gethostname())
     time_started = time.time()
+    inputs = [serversocket,]
     while True:
         try:
-            if time.time() - time_started < 5:
-                conn, addr = serversocket.accept()
-                threading.Thread(target=handlereq,args=(conn,addr)).start()
-            else:
-                print("timeout")
-                serversocket.close()
-                break
+            r_list, w_list, e_list = select.select(inputs, [], [], 1)
+            for event in r_list:
+                if event == serversocket:
+                    conn,addr = serversocket.accept()
+                    inputs.append(conn)
+                else:
+                    data = event.recv(1024)
+                    if data:
+                        print("Data Transfering from::" + bytes(data))
+                        event.send("Congrats!We have successfully received your message")
+                        break
+                    else:
+                        inputs.remove(event)
+                        print("Connection tear down")
+
         except socket.timeout,e:
             print("socket has timeout")
             exit(1)
