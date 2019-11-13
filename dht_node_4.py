@@ -291,11 +291,15 @@ def Command_monitor():
                         if command == "SCT":
                             searchcount = int(data.split(":")[1])
                             src_ip = data.split(":")[2]
-                            src_port = data.split(":")[3]
-                            # If the search count is down to 1 than we know that self is the shortcut node that the node is looking for
+                            src_port = int(data.split(":")[3])
+                            printbycom("Incomming SCT request from" + bytes(addr) +
+                                       "with the message from " + bytes(src_ip) + bytes(src_port), SHOW_TRIVAL_MSG)
+                            # If the search count is down to 1 than we know that self is the shortcut node
+                            # that the node is looking for
                             if searchcount == 1:
                                 printbycom("Shortcut searching hit! Responding back", SHOW_TRIVAL_MSG)
-                                #Just send the SCTACK to the dest ip and port to notify him we are the short cut node his looking for
+                                # Just send the SCTACK to the dest ip and port to notify him we are the
+                                # short cut node his looking for
                                 Send_UDP_msg("SCTACK", src_ip, src_port)
                             else:
                                 # Else we just decrease the search count by 1 and forward the request
@@ -458,6 +462,9 @@ def main_procedure():
             elif param == "backupnode":
                 str = bytes(sucnode_2) if HAVE_SUCNODE2 else "no backup node avaliable"
                 print("backupnode is:" + str)
+            elif param == "shortcutnode":
+                str = bytes(shortcutnode) if SHORTCUT_AVA else "no shortcut node avaliable"
+                print ("shortcut node is:" + str)
         else:
             print("Invalid command please reinput\n")
             continue
