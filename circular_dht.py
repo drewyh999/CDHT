@@ -298,10 +298,13 @@ def Command_monitor():
                             # that the node is looking for
                             if searchcount == 1:
                                 printbycom("Shortcut searching hit! Responding back", SHOW_TRIVAL_MSG)
+<<<<<<< HEAD
 
                                 # Just send the SCTACK to the dest ip and port to notify him we are the
                                 # short cut node his looking for
 
+=======
+>>>>>>> parent of 859b849... timeout supported
                                 Send_UDP_msg("SCTACK", src_ip, src_port)
                             else:
                                 # Else we just decrease the search count by 1 and forward the request
