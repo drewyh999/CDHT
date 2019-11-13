@@ -14,16 +14,15 @@ def GetSocket(portnumber):
 if __name__ == '__main__':
     while True:
         # addr = client.accept()
-
+        client = GetSocket(12333)
         print("Connection successed")
         while True:  #strip
-            client = GetSocket(12333)
             msg = raw_input("Online:::input message")
             if(msg == "$"):
                 print("Successfully quited\n")
                 break
             client.send(msg)
-            data = client.recv(1024)
-            client.close()#
+            data = client.recv(1024) #
             print('recv:::  ' +  bytes(data)) #
         break
+    client.close()
