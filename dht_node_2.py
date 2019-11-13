@@ -31,6 +31,7 @@ FILE_NOT_ALLOCATED_TO_SELF = 8
 TRAN = 1 #Mode for file transmission, give the file to the destination
 DOWNLOAD = 0 #Mode for file download get the file from destination
 SHORTCUT_NUMBER = 0
+SEND_SCT_ACK = False
 
 
 def initialization():
@@ -74,7 +75,7 @@ def initialization():
 def UrgentContact():
     global sucnode_1,HAVE_SUCNODE2,SUCNODE1_AVA,last_suc_reply,suc_id
     if not HAVE_SUCNODE2:
-        printbycom("Unforunately We Don't have the successor node 2",SHOW_TRIVAL_MSG)
+        print("Unforunately We Don't have the successor node 2")
         return
     urgent_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     urgent_socket.settimeout(STATUS_PING_TIMEOUT)
@@ -86,7 +87,7 @@ def UrgentContact():
         HAVE_SUCNODE2 = False
         last_suc_reply = time.time()
         SUCNODE1_AVA = True
-        printbycom("Fortunately Successor node 2 is Online! Setting successor node 1 to him!", SHOW_TRIVAL_MSG)
+        print("Fortunately Successor node 2 is Online! Setting successor node 1 to him!")
     else:
         SUCNODE1_AVA = False
         HAVE_SUCNODE2 = False
@@ -128,6 +129,7 @@ def Status_monitor():
     '''
     global sucnode_1,sucnode_2,prenode,shortcutnode,self_identifier,pre_id,suc_id
     global SUCNODE1_AVA,SHORTCUT_AVA,HAVE_SUCNODE2
+    global SEND_SCT_ACK,shortcutpre
 
     global last_suc_reply
     last_suc_reply = time.time()#the time last suc ack arrived
@@ -140,12 +142,12 @@ def Status_monitor():
     udp_socket.bind((socket.gethostname(),UDP_PORT_BASE + self_identifier))
 
     inputs = [udp_socket, ]
-
+    outputs = [udp_socket,]
     while True:
         try:
             data = None
             addr = None
-            r_list, w_list, e_list = select.select(inputs, [], [], 1)
+            r_list, w_list, e_list = select.select(inputs, outputs, [], 1)
             for event in r_list:
                     try:
                         data,addr = event.recvfrom(BUFFER)
@@ -163,18 +165,22 @@ def Status_monitor():
                             last_suc_reply = time.time()
                             printbycom("Successor node " + bytes(sucnode_1) + " is online", SHOW_TRIVAL_MSG)
 
-                        if msg_type == "SCTACK" and addr == shortcutnode:
+                        if msg_type == "SCTACK":
                             SHORTCUT_AVA = True
                             shortcutnode = addr
                             last_sct_reply = time.time()
-                            printbycom("Short cut node " + shortcutnode + " is online", SHOW_TRIVAL_MSG)
+                            printbycom("Short cut node " + bytes(shortcutnode) + " is online", SHOW_TRIVAL_MSG)
 
                         if msg_type == "SCTSEQ":
                             udp_socket.sendto("SCTACK", (ip, port))
-                            printbycom("We have become a short cut node for" + shortcutnode, SHOW_TRIVAL_MSG)
+                            printbycom("We have become a short cut node for" + bytes(addr), SHOW_TRIVAL_MSG)
                         break
                     except Exception as e:
                         print("Exception happens among socket receiving" + e.message)
+            for w_events in w_list:
+                if SEND_SCT_ACK:
+                    w_events.sendto("SCTACK",shortcutpre)
+                    SEND_SCT_ACK =False
 
             if SUCNODE1_AVA and (time.time() - last_suc_sent > STATUS_PING_INTERVAL):
                 last_suc_sent = time.time()
@@ -185,7 +191,7 @@ def Status_monitor():
                 print("Successor node 1 is proved to be offline, trying to contact successor node 2")
                 SUCNODE1_AVA = False
                 #TODO need a restriction in port use when using multithreading ?
-                thread = threading.Thread(target = UrgentContact)
+                thread = threading.Thread(target=UrgentContact)
                 thread.setDaemon(True)
                 thread.start()
 
@@ -196,7 +202,9 @@ def Status_monitor():
 
             if SHORTCUT_AVA and (time.time() - last_sct_reply > NODE_TIMEOUT_INTERVAL):  # if the sucnode is timeout try to contact sucnode_2
                 SHORTCUT_AVA = False
-                Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":" + bytes(UDP_PORT_BASE + self_identifier),sucnode_1[0],suc_id + TCP_PORT_BASE)
+                Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":" + bytes(
+                    socket.gethostbyname(socket.gethostname())) + ":" + bytes(
+                        UDP_PORT_BASE + self_identifier), sucnode_1[0], suc_id + TCP_PORT_BASE)
                 printbycom("Short cut node 1 is proved to be offline We are trying to find a new one",SHOW_TRIVAL_MSG)
 
         except socket.timeout as e:
@@ -210,6 +218,7 @@ def Command_monitor():
 
     global last_sct_reply, last_suc_reply, sucnode_1,self_identifier,HAVE_SUCNODE2,SUCNODE1_AVA,sucnode_2,suc_id
     global JOINING_NETWORK
+    global SEND_SCT_ACK,shortcutpre
     tcp_sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     tcp_sock.bind((socket.gethostname(),TCP_PORT_BASE + self_identifier))
     tcp_sock.setblocking(False)
@@ -298,27 +307,24 @@ def Command_monitor():
                             # that the node is looking for
                             if searchcount == 1:
                                 printbycom("Shortcut searching hit! Responding back", SHOW_TRIVAL_MSG)
-<<<<<<< HEAD
-<<<<<<< HEAD
+
+
                                 # Just send the SCTACK to the dest ip and port to notify him we are the
                                 # short cut node his looking for
-=======
->>>>>>> parent of 859b849... timeout supported
-=======
->>>>>>> parent of 859b849... timeout supported
-                                Send_UDP_msg("SCTACK", src_ip, src_port)
+
+                                shortcutpre = (src_ip,src_port)
+                                SEND_SCT_ACK = True
                             else:
                                 # Else we just decrease the search count by 1 and forward the request
                                 searchcount = searchcount - 1
                                 if SUCNODE1_AVA:
-                                    Send_TCP_msg("SCT:" + bytes(searchcount) + ":" + src_ip + ":" + src_port,sucnode_1[0], suc_id + TCP_PORT_BASE)
+                                    Send_TCP_msg("SCT:" + bytes(searchcount) + ":" + bytes(src_ip) + ":" + bytes(src_port),sucnode_1[0], suc_id + TCP_PORT_BASE)
                         break
                     else:
                         inputs.remove(event)
             #After the iteration we send out a message to ask for sucnode2 if we do not have one
             if SUCNODE1_AVA and not HAVE_SUCNODE2:
                 Get_nextnode(sucnode_1[0], suc_id + TCP_PORT_BASE)
-                printbycom("Asking for backup node",SHOW_TRIVAL_MSG)
 
           #Handling quit command(quiting message is only possible to be sent from the current successor)
 
@@ -433,7 +439,7 @@ def main_procedure():
             param = command.split(" ")[1]
             if param == "shortcut":
                 SHORTCUT_NUMBER = int(command.split(" ")[2])
-                Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":" + bytes(socket.gethostname()) + ":" + bytes(
+                Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":" + bytes(socket.gethostbyname(socket.gethostname())) + ":" + bytes(
                     UDP_PORT_BASE + self_identifier), sucnode_1[0], suc_id + TCP_PORT_BASE)
                 continue
             elif param == "sucnode":
