@@ -12,9 +12,12 @@ import threading
 import socket
 import time
 import select
+import os
+import datetime
 
-UDP_PORT_BASE = 30000;#port base is used to combine the offset(identifier) to be the final port number for this single port
-TCP_PORT_BASE = 50000;#port base for udp transmission
+UDP_PORT_BASE = 30000;#port base for udp transmission
+TCP_PORT_BASE = 50000;#port base for tcp transmission
+FILE_PORT_BASE = 60000;#port base for file transmission
 HAVE_SUCNODE2 = False;#currently got the sucnode_2
 PRENODE_INFORMED = False #inform the prenode to change the sucnode_1
 STATUS_PING_TIMEOUT = 5.0; #timeout that a ping to test alive
@@ -32,6 +35,7 @@ TRAN = 1 #Mode for file transmission, give the file to the destination
 DOWNLOAD = 0 #Mode for file download get the file from destination
 SHORTCUT_NUMBER = 0
 SEND_SCT_ACK = False
+LOCALHOST = socket.gethostbyname(socket.gethostname())
 
 
 def initialization():
@@ -104,12 +108,52 @@ def myhash(target):
         SUM += ord(i)
     return (SUM * 5) % MAX_ID
 
-def Contact_and_Transfer(src_ip,src_port,mode):
-    conn = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    conn.connect((src_ip,int(src_port)))
-    conn.send("READY")
-    data = conn.recv(BUFFER)
-    #TODO Save the file or Transmit the file properly according to the "mode"
+def Contact_and_Transfer(src_ip,src_port,mode,filename):
+    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    sock.connect((src_ip,src_port))
+    # if self had been requested to transfer a file allocated to self, then we
+    # firstly scan the directory the whether we have that file, than if we have it,
+    # Transmit the command with the beginning of "FILE_READY" otherwise we say "FILE_NOT_AVA"
+    if mode == TRAN:
+        fpath = "localdata/" + filename
+        if os.path.isfile(fpath):
+            # Send Ready and transmit
+            sock.send("FILE_READY")
+            printbycom("We have the file they want! sending back confirmation",SHOW_TRIVAL_MSG)
+            response = sock.recv(BUFFER)
+            if response == "RECV_READY":
+                fo = open(fpath, 'rb')
+                assert fo
+                while True:
+                    filedata = fo.read(1024)
+                    if not filedata:
+                        break
+                    sock.send(filedata)
+                fo.close()
+            sock.close()
+            printbycom("Transmision completed!",SHOW_TRIVAL_MSG)
+        else:
+            printbycom("We do not have the file here in local data maybe there is an error",SHOW_TRIVAL_MSG)
+            sock.send("FILE_NOT_AVA")
+            sock.close()
+
+    # if we are supposed to store the file ,just simply tell the source we are ready and receive
+    # the file
+    else:
+        printbycom("We are supposed to store the file,waiting on receiveing......",SHOW_TRIVAL_MSG)
+        sock.send("RECV_READY")
+        fpath = "localdata/"  + filename
+        fo = open(fpath,'wb')
+        while True:
+            recvdata = sock.recv(BUFFER)
+            if not recvdata:
+                break
+            fo.write(recvdata)
+        printbycom("Successfully received file from" + bytes(src_ip) + ":" + bytes(src_port),SHOW_TRIVAL_MSG)
+        sock.close()
+
+
+#TODO Save the file or Transmit the file properly according to the "mode"
 
 def Send_TCP_msg(msg,ip,port):
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -203,7 +247,7 @@ def Status_monitor():
             if SHORTCUT_AVA and (time.time() - last_sct_reply > NODE_TIMEOUT_INTERVAL):  # if the sucnode is timeout try to contact sucnode_2
                 SHORTCUT_AVA = False
                 Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":" + bytes(
-                    socket.gethostbyname(socket.gethostname())) + ":" + bytes(
+                    LOCALHOST) + ":" + bytes(
                         UDP_PORT_BASE + self_identifier), sucnode_1[0], suc_id + TCP_PORT_BASE)
                 printbycom("Short cut node 1 is proved to be offline We are trying to find a new one",SHOW_TRIVAL_MSG)
 
@@ -277,7 +321,7 @@ def Command_monitor():
                             # Compare the myhash value with the self ID and suc_node ID
                             filename = data.split(":")[1]
                             src_ip = data.split(":")[2]
-                            src_port = data.split(":")[3]
+                            src_port = int(data.split(":")[3])
 
                             printbycom("Node" + bytes(addr[0]) + ":" + bytes(
                                 addr[1]) + "is" + command.lower() + "for" + filename, SHOW_TRIVAL_MSG)
@@ -285,9 +329,9 @@ def Command_monitor():
                                 printbycom("File is avaliable here", SHOW_TRIVAL_MSG)
                                 # TODO Maybe multi threading is better?  We may need a variable to restrict the maximum threads within a single node
                                 if command == "REQ":
-                                    Contact_and_Transfer(src_ip, src_port, TRAN)
+                                    Contact_and_Transfer(src_ip, src_port, TRAN,filename)
                                 else:
-                                    Contact_and_Transfer(src_ip, src_port, DOWNLOAD)
+                                    Contact_and_Transfer(src_ip, src_port, DOWNLOAD,filename)
                                 break
                             # If the myhash value is greater than both self and the successor node ID we forward the command
                             elif Check_File_Ava(filename) == FILE_NOT_ALLOCATED_TO_SELF:
@@ -325,11 +369,6 @@ def Command_monitor():
             #After the iteration we send out a message to ask for sucnode2 if we do not have one
             if SUCNODE1_AVA and not HAVE_SUCNODE2:
                 Get_nextnode(sucnode_1[0], suc_id + TCP_PORT_BASE)
-
-          #Handling quit command(quiting message is only possible to be sent from the current successor)
-
-
-        #Close the connection every time we handle a
 
 
 def Check_File_Ava(filename):
@@ -385,7 +424,7 @@ def main_procedure():
     if sucnode_1 != None and prenode != None:
         print("Attempting to joining the network with successor " + sucnode_1[0] + " and the predecessor " + prenode[0])
         try:
-            Send_TCP_msg("JOIN:" + bytes(socket.gethostbyname(socket.gethostname())) + ":" + bytes(UDP_PORT_BASE + self_identifier),prenode[0],pre_id + TCP_PORT_BASE)
+            Send_TCP_msg("JOIN:" + bytes(LOCALHOST) + ":" + bytes(UDP_PORT_BASE + self_identifier),prenode[0],pre_id + TCP_PORT_BASE)
             SUCNODE1_AVA = True
         except Exception as e:
             print("Exception happens when trying to join the network " + e.message)
@@ -439,7 +478,7 @@ def main_procedure():
             param = command.split(" ")[1]
             if param == "shortcut":
                 SHORTCUT_NUMBER = int(command.split(" ")[2])
-                Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":" + bytes(socket.gethostbyname(socket.gethostname())) + ":" + bytes(
+                Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":" + bytes(LOCALHOST) + ":" + bytes(
                     UDP_PORT_BASE + self_identifier), sucnode_1[0], suc_id + TCP_PORT_BASE)
                 continue
             elif param == "sucnode":
@@ -477,6 +516,60 @@ def main_procedure():
             elif param == "shortcutnode":
                 str = bytes(shortcutnode) if SHORTCUT_AVA else "no shortcut node avaliable"
                 print ("shortcut node is:" + str)
+        elif command.split(" ")[0] == "store":
+            fpath = command.split(" ")[1]
+            filename = fpath.split("/")[len(fpath.split("/"))]
+            if not os.path.isfile(fpath):
+                print("File path not valid")
+                continue
+            else:
+                sock_get = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                sock_get.bind((LOCALHOST, self_identifier + FILE_PORT_BASE))
+                sock_get.listen(1)
+                Send_TCP_msg("STORE:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                             bytes(self_identifier + FILE_PORT_BASE),sucnode_1[0],suc_id + TCP_PORT_BASE)
+                print("Sending out storing request,listening for reply")
+                conn,addr = sock_get.accept()
+                info = conn.recv(BUFFER)
+                fo = open(fpath,"rb")
+                if info == "RECV_READY":
+                    print("Request responded.Attempting to transmit file")
+                    while True:
+                        filedata = fo.read(1024)
+                        if not filedata:
+                            break
+                        sock_get.send(filedata)
+                    fo.close()
+                conn.close()
+                sock_get.close()
+                print("File storing success!")
+
+        elif command.split(" ")[0] == "req":
+            sock_rec = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            sock_rec.bind((LOCALHOST, self_identifier + FILE_PORT_BASE))
+            sock_rec.listen(1)
+            filename = command.split(" ")[1]
+            Send_TCP_msg("REQ:" + filename + ":" + bytes(LOCALHOST) + ":"
+                         + bytes(self_identifier + FILE_PORT_BASE), sucnode_1[0], suc_id + TCP_PORT_BASE)
+            print("Sending out request")
+            conn,addr = sock_rec.accept()
+            info = conn.recv(BUFFER)
+            if info == "FILE_READY":
+                conn.send("RECV_READY")
+                print("File is found ! Receiving ")
+                fpath = "localrecv/" + bytes(datetime.datetime.now()) + "_" + filename
+                fo = open(fpath,'wb')
+                while True:
+                    data = conn.recv(BUFFER)
+                    if not data:
+                        break
+                    fo.write(data)
+                print("File transmission completed!")
+                fo.close()
+                conn.close()
+                sock_rec.close()
+
+
         else:
             print("Invalid command please reinput\n")
             continue
