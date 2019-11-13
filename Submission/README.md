@@ -37,10 +37,13 @@ python dht_node_/节点号/.py [后继节点ip:port] [前驱节点ip:port]
 > get backupnode 会返回当前节点后继节点的后继节点信息<br>
 > get shortcutnode 会返回当前节点的shortcut节点信息<br>
 > set sucnode [ip:port] 会根据参数设置当前的后继节点<br>
-> set shortcut [shortcutcount] 会根据参数设置shortcut<br>
+> set shortcut [shortcutcount] 会根据参数设置shortcut,在设置了shortcut之后查询文件以及储存文件的消息会从shortcut发出
+每一个节点只能设置自己开启shortcut<br>
 > set showpingmsg [on/off] 会根据参数打开ping信息的输出，打开或者关闭<br>
 > req [filename] 会根据文件名在CDHT网络中查找这个文件<br>
 > store [filepath] 会根据文件路径将文件储存在CDHT网络当中<br>
+
+
 
 
 

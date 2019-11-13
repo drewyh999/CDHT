@@ -518,8 +518,12 @@ def main_procedure():
                 sock_get = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                 sock_get.bind((LOCALHOST, self_identifier + FILE_PORT_BASE))
                 sock_get.listen(1)
-                Send_TCP_msg("STORE:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                if not SHORTCUT_AVA:
+                    Send_TCP_msg("STORE:" + filename + ":" + bytes(LOCALHOST) + ":" +
                              bytes(self_identifier + FILE_PORT_BASE),sucnode_1[0],suc_id + TCP_PORT_BASE)
+                else:
+                    Send_TCP_msg("STORE:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                                 bytes(self_identifier + FILE_PORT_BASE), shortcutnode[0], (shortcutnode[1] - UDP_PORT_BASE) + TCP_PORT_BASE)
                 print("Sending out storing request,listening for reply")
                 conn,addr = sock_get.accept()
                 info = conn.recv(BUFFER)
@@ -542,8 +546,14 @@ def main_procedure():
             sock_rec.bind((LOCALHOST, self_identifier + FILE_PORT_BASE))
             sock_rec.listen(1)
             filename = command.split(" ")[1]
-            Send_TCP_msg("REQ:" + filename + ":" + bytes(LOCALHOST) + ":"
-                         + bytes(self_identifier + FILE_PORT_BASE), sucnode_1[0], suc_id + TCP_PORT_BASE)
+            if not SHORTCUT_AVA:
+                #TODO test the shortcut search sending
+                Send_TCP_msg("REQ:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                             bytes(self_identifier + FILE_PORT_BASE), sucnode_1[0], suc_id + TCP_PORT_BASE)
+            else:
+                Send_TCP_msg("REQ:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                             bytes(self_identifier + FILE_PORT_BASE), shortcutnode[0],
+                             (shortcutnode[1] - UDP_PORT_BASE) + TCP_PORT_BASE)
             print("Sending out request")
             conn,addr = sock_rec.accept()
             info = conn.recv(BUFFER)
