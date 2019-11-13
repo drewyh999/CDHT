@@ -85,7 +85,7 @@ def UrgentContact():
     urgent_socket.settimeout(STATUS_PING_TIMEOUT)
     urgent_socket.sendto("SEQ", sucnode_2)
     u_data, u_addr = urgent_socket.recvfrom(BUFFER)
-    if u_data == "ACK" and u_addr == sucnode_2[1]:
+    if u_data == "ACK" and u_addr == sucnode_2:
         sucnode_1 = sucnode_2
         suc_id = sucnode_1[1] - UDP_PORT_BASE
         HAVE_SUCNODE2 = False
@@ -323,8 +323,8 @@ def Command_monitor():
                             src_ip = data.split(":")[2]
                             src_port = int(data.split(":")[3])
 
-                            printbycom("Node" + bytes(addr[0]) + ":" + bytes(
-                                addr[1]) + "is" + command.lower() + "for" + filename, SHOW_TRIVAL_MSG)
+                            printbycom("Node" + bytes(src_ip) + ":" + bytes(
+                                src_port) + "is " + command.lower() + " for" + filename, SHOW_TRIVAL_MSG)
                             if Check_File_Ava(filename) == FILE_ALLOCATED_TO_SELF:
                                 printbycom("File is avaliable here", SHOW_TRIVAL_MSG)
                                 # TODO Maybe multi threading is better?  We may need a variable to restrict the maximum threads within a single node
@@ -338,7 +338,7 @@ def Command_monitor():
                                 # If the successor node is ava than forward the message
                                 if SUCNODE1_AVA:
                                     printbycom("File is not ava here ,forwarding the request", SHOW_TRIVAL_MSG)
-                                    Send_TCP_msg(command, sucnode_1[0], suc_id + TCP_PORT_BASE)
+                                    Send_TCP_msg(data, sucnode_1[0], suc_id + TCP_PORT_BASE)
                                     break
                         # Handle shortcut searching request
                         if command == "SCT":
@@ -518,7 +518,7 @@ def main_procedure():
                 print ("shortcut node is:" + str)
         elif command.split(" ")[0] == "store":
             fpath = command.split(" ")[1]
-            filename = fpath.split("/")[len(fpath.split("/"))]
+            filename = fpath.split("/")[len(fpath.split("/")) - 1]
             if not os.path.isfile(fpath):
                 print("File path not valid")
                 continue
@@ -538,7 +538,7 @@ def main_procedure():
                         filedata = fo.read(1024)
                         if not filedata:
                             break
-                        sock_get.send(filedata)
+                        conn.send(filedata)
                     fo.close()
                 conn.close()
                 sock_get.close()
@@ -567,6 +567,9 @@ def main_procedure():
                 print("File transmission completed!")
                 fo.close()
                 conn.close()
+                sock_rec.close()
+            else:
+                print("File not found")
                 sock_rec.close()
 
 

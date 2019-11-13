@@ -2,8 +2,19 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="3b38a028-59d5-4772-ad9f-3bd4a0151d4a" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ClientTest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ClientTest_2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ServerTest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/UDP_ClientTest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/UDP_ServerTest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/UDP_TestClient_2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cdht_guidance.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/circular_dht.py" beforeDir="false" afterPath="$PROJECT_DIR$/dht_node_1.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dht_node_2.py" beforeDir="false" afterPath="$PROJECT_DIR$/dht_node_2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dht_node_3.py" beforeDir="false" afterPath="$PROJECT_DIR$/dht_node_3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dht_node_4.py" beforeDir="false" afterPath="$PROJECT_DIR$/dht_node_4.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -39,7 +50,51 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.cdht_3">
+  <component name="RunManager" selected="Python.cdht_1">
+    <configuration name="UDP_ClientTest" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="CDHT" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/UDP_ClientTest.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="UDP_ServerTest" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="CDHT" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/UDP_ServerTest.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="cdht_1" type="PythonConfigurationType" factoryName="Python">
       <module name="CDHT" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -53,7 +108,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/circular_dht.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/dht_node_1.py" />
       <option name="PARAMETERS" value="null null" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -76,7 +131,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/dht_node_2.py" />
-      <option name="PARAMETERS" value="null 172.20.10.2:30001" />
+      <option name="PARAMETERS" value="null 10.132.12.61:30001" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -98,7 +153,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/dht_node_3.py" />
-      <option name="PARAMETERS" value="null 172.20.10.2:30121" />
+      <option name="PARAMETERS" value="null 10.132.12.61:30121" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -110,7 +165,15 @@
       <item itemvalue="Python.cdht_1" />
       <item itemvalue="Python.cdht_2" />
       <item itemvalue="Python.cdht_3" />
+      <item itemvalue="Python.UDP_ServerTest" />
+      <item itemvalue="Python.UDP_ClientTest" />
     </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.UDP_ClientTest" />
+        <item itemvalue="Python.UDP_ServerTest" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -122,7 +185,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1573630918700</updated>
-      <workItem from="1573630919979" duration="8225000" />
+      <workItem from="1573630919979" duration="11067000" />
     </task>
     <servers />
   </component>
@@ -140,9 +203,22 @@
       </map>
     </option>
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/dht_node_3.py</url>
+          <line>85</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/CDHT$cdht_3.coverage" NAME="cdht_3 Coverage Results" MODIFIED="1573633998614" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/CDHT$cdht_2.coverage" NAME="cdht_2 Coverage Results" MODIFIED="1573633996543" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/CDHT$cdht_1.coverage" NAME="cdht_1 Coverage Results" MODIFIED="1573633994064" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/CDHT$cdht_3.coverage" NAME="cdht_3 Coverage Results" MODIFIED="1573646985102" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/CDHT$cdht_2.coverage" NAME="cdht_2 Coverage Results" MODIFIED="1573646095293" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/CDHT$UDP_ClientTest.coverage" NAME="UDP_ClientTest Coverage Results" MODIFIED="1573645791695" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/CDHT$cdht_1.coverage" NAME="cdht_1 Coverage Results" MODIFIED="1573646093356" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/CDHT$UDP_ServerTest.coverage" NAME="UDP_ServerTest Coverage Results" MODIFIED="1573645766460" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

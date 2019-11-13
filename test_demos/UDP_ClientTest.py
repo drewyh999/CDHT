@@ -24,5 +24,6 @@ if __name__ == '__main__':
                 break
             client.sendto(msg,addr)
             data,addr = client.recvfrom(1024) #
+            print(addr[0])
             print('recv:::  ' +  bytes(data) + " ::: From ::: " + bytes(addr)) #
         break
