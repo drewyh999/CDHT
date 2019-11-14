@@ -28,7 +28,7 @@ SUCNODE1_AVA = False;#the sucnode_1 is alive or not
 STATUS_PING_INTERVAL = 3.0;
 NODE_TIMEOUT_INTERVAL = 5.0;#the maximum time a node have to respond to a ping req
 MAX_TCP_CONN = 5; #Max TCP connection that could be handled at the same time
-MAX_ID = 255;#Max number of peer#
+MAX_ID = 255;#Max number of peer
 FILE_ALLOCATED_TO_SELF = 5
 FILE_NOT_ALLOCATED_TO_SELF = 8
 TRAN = 1 #Mode for file transmission, give the file to the destination
@@ -154,7 +154,6 @@ def Contact_and_Transfer(src_ip,src_port,mode,filename):
 
 
 
-
 def Send_TCP_msg(msg,ip,port):
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sock.connect((ip,int(port)))
@@ -234,6 +233,7 @@ def Status_monitor():
             if SUCNODE1_AVA and (time.time() - last_suc_reply > NODE_TIMEOUT_INTERVAL):#if the sucnode is timeout ,try to contact sucnode_2
                 print("Successor node 1 is proved to be offline, trying to contact successor node 2")
                 SUCNODE1_AVA = False
+
                 thread = threading.Thread(target=UrgentContact)
                 thread.setDaemon(True)
                 thread.start()
@@ -321,11 +321,12 @@ def Command_monitor():
                             filename = data.split(":")[1]
                             src_ip = data.split(":")[2]
                             src_port = int(data.split(":")[3])
+
                             printbycom("Node" + bytes(src_ip) + ":" + bytes(
                                 src_port) + "is " + command.lower() + " for" + filename, SHOW_TRIVAL_MSG)
-
                             if Check_File_Ava(filename) == FILE_ALLOCATED_TO_SELF:
                                 printbycom("File is avaliable here", SHOW_TRIVAL_MSG)
+                                # TODO Multi threading
                                 if command == "REQ":
                                     Contact_and_Transfer(src_ip, src_port, TRAN,filename)
                                 else:
@@ -429,7 +430,7 @@ def main_procedure():
             sys.exit(1)
 
 
-    #File Storing and Requesting Command Format 'STORE:[filename]:[localhost_name]:[localhost_port]'
+       #File Storing and Requesting Command Format 'STORE:[filename]:[localhost_name]:[localhost_port]'
     #Shortcut searching command format 'SCT:[localhost_name]:[localhost_name]:[search_count]'
     #Joining the network
     thread_1 = threading.Thread(target=Status_monitor)
@@ -517,8 +518,12 @@ def main_procedure():
                 sock_get = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                 sock_get.bind((LOCALHOST, self_identifier + FILE_PORT_BASE))
                 sock_get.listen(1)
-                Send_TCP_msg("STORE:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                if not SHORTCUT_AVA:
+                    Send_TCP_msg("STORE:" + filename + ":" + bytes(LOCALHOST) + ":" +
                              bytes(self_identifier + FILE_PORT_BASE),sucnode_1[0],suc_id + TCP_PORT_BASE)
+                else:
+                    Send_TCP_msg("STORE:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                                 bytes(self_identifier + FILE_PORT_BASE), shortcutnode[0], (shortcutnode[1] - UDP_PORT_BASE) + TCP_PORT_BASE)
                 print("Sending out storing request,listening for reply")
                 conn,addr = sock_get.accept()
                 info = conn.recv(BUFFER)
@@ -526,7 +531,7 @@ def main_procedure():
                 if info == "RECV_READY":
                     print("Request responded.Attempting to transmit file")
                     while True:
-                        filedata = fo.read(1024)
+                        filedata = fo.read(BUFFER)
                         if not filedata:
                             break
                         conn.send(filedata)
@@ -536,12 +541,19 @@ def main_procedure():
                 print("File storing success!")
 
         elif command.split(" ")[0] == "req":
+            # TODO Muiltithreading
             sock_rec = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
             sock_rec.bind((LOCALHOST, self_identifier + FILE_PORT_BASE))
             sock_rec.listen(1)
             filename = command.split(" ")[1]
-            Send_TCP_msg("REQ:" + filename + ":" + bytes(LOCALHOST) + ":"
-                         + bytes(self_identifier + FILE_PORT_BASE), sucnode_1[0], suc_id + TCP_PORT_BASE)
+            if not SHORTCUT_AVA:
+                #TODO test the shortcut search sending
+                Send_TCP_msg("REQ:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                             bytes(self_identifier + FILE_PORT_BASE), sucnode_1[0], suc_id + TCP_PORT_BASE)
+            else:
+                Send_TCP_msg("REQ:" + filename + ":" + bytes(LOCALHOST) + ":" +
+                             bytes(self_identifier + FILE_PORT_BASE), shortcutnode[0],
+                             (shortcutnode[1] - UDP_PORT_BASE) + TCP_PORT_BASE)
             print("Sending out request")
             conn,addr = sock_rec.accept()
             info = conn.recv(BUFFER)

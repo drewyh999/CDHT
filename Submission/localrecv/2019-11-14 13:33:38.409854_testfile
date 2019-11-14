@@ -1,0 +1,12 @@
+使用寄存器可以让机器码指令变短
+正数和0的补码就是该数字本身。负数的补码则是将其对应正数按位取反再加1。
+
+while (dataReader.Read())
+                    {
+
+                        listBox1.Items.Add((string)dataReader[“xh”] + “ ” + (string)dataReader[“xm”] + “ ” +(string)dataReader[“xb”] + “ ” );
+                    }
+string stu = “学生”;
+string sql = string.Format("insert into student (name,classes,gender,grade,zzmm) values ('{0}','{1}','{2}','{3}',null)", name,classes,sex,grade);
+
+ set shortcut 2
