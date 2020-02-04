@@ -40,14 +40,14 @@ LOCALHOST = socket.gethostbyname(socket.gethostname())
 
 def initialization():
     if len(sys.argv) - 1 < 2:
-        print("usage: [self_identifier] [successor node(IP:port#)] [predecessor node(IP:port#)]")
+        print("usage: [successor node(IP:port#)] [predecessor node(IP:port#)]")
         #print("This application is meant to implement a ")
         exit(1)
 
     global sucnode_1, sucnode_2,prenode,shortcutnode,self_identifier,pre_id,suc_id,SUCNODE1_AVA
     try:
         #Get self_identifier by directly have the port number decrease by UDP port base
-        #If the sucnode is not specified just add the prenode's ID to 10 and make it own
+        #If the sucnode is not specified just add the prenode's ID to 120 and make it own
         sucnode_1 = None
         sucnode_2 = None
         prenode = None
@@ -89,7 +89,7 @@ def UrgentContact():
         sucnode_1 = sucnode_2
         suc_id = sucnode_1[1] - UDP_PORT_BASE
         HAVE_SUCNODE2 = False
-        last_suc_reply = time.time()
+        last_suc_reply = time.time()#set sub reply time to now prevent from timeout
         SUCNODE1_AVA = True
         print("Fortunately Successor node 2 is Online! Setting successor node 1 to him!")
     else:
@@ -152,13 +152,12 @@ def Contact_and_Transfer(src_ip,src_port,mode,filename):
         printbycom("Successfully received file from" + bytes(src_ip) + ":" + bytes(src_port),SHOW_TRIVAL_MSG)
         sock.close()
 
-
-
 def Send_TCP_msg(msg,ip,port):
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     sock.connect((ip,int(port)))
     sock.send(msg)
     sock.close()
+
 def Send_UDP_msg(msg,ip,port):
     sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     sock.sendto(msg,(ip,port))
@@ -180,9 +179,9 @@ def Status_monitor():
     global last_sct_reply#Set to time() when need shortcut so that they won't be judged as timeout in the first round
     last_sct_sent = 0
 
-    udp_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.setblocking(False)
-    udp_socket.bind((socket.gethostname(),UDP_PORT_BASE + self_identifier))
+    udp_socket.bind((socket.gethostname(), UDP_PORT_BASE + self_identifier))
 
     inputs = [udp_socket, ]
     outputs = [udp_socket,]
@@ -243,7 +242,7 @@ def Status_monitor():
                 udp_socket.sendto("SCTSEQ", shortcutnode)
                 printbycom("Sending ping to test Short cut" + bytes(shortcutnode), SHOW_TRIVAL_MSG)
 
-            if SHORTCUT_AVA and (time.time() - last_sct_reply > NODE_TIMEOUT_INTERVAL):  # if the sucnode is timeout try to contact sucnode_2
+            if SHORTCUT_AVA and (time.time() - last_sct_reply > NODE_TIMEOUT_INTERVAL):
                 SHORTCUT_AVA = False
                 Send_TCP_msg("SCT:" + bytes(SHORTCUT_NUMBER) + ":" + bytes(
                     LOCALHOST) + ":" + bytes(
@@ -316,6 +315,7 @@ def Command_monitor():
                             break
                         # Handling the File storing request, if we are supposed to store the file, than store it
                         # Else we transmit it to next node
+
                         if command == "STORE" or command == "REQ":
                             # Compare the myhash value with the self ID and suc_node ID
                             filename = data.split(":")[1]
@@ -431,7 +431,7 @@ def main_procedure():
 
 
        #File Storing and Requesting Command Format 'STORE:[filename]:[localhost_name]:[localhost_port]'
-    #Shortcut searching command format 'SCT:[localhost_name]:[localhost_name]:[search_count]'
+    #Shortcut searching command format 'SCT:[search_count]:[localhost_name]:[localhost_name]'
     #Joining the network
     thread_1 = threading.Thread(target=Status_monitor)
     thread_1.setDaemon(True)
